@@ -4,16 +4,26 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import StaleElementReferenceException
+from django.core.management.base import BaseCommand
 from multiprocessing import Pool
 import os
 import time
-import pandas as pd
+import re
+
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'BizRent.settings')
+django.setup()
+
+
+from scraper.models import Property
 
 class LoopNetScraper:
 
     def __init__(self):
         self.loopNet_url = 'https://www.loopnet.ca/'
-        self.chrome_driver = os.getcwd() + '\scraper\management\commands\chromedriver.exe'
+        self.chrome_driver = os.getcwd() + '\chromedriver.exe'
         self.search_filters = {
             'regions': ['East of England'],
             'markets': ['Birmingham', 'London', 'Manchester'],
@@ -42,9 +52,23 @@ class LoopNetScraper:
 
         return driver
     
+    def safe_click(self, driver, xpath, retries=3):
+        """ A safe click method to retry clicking elements in case of StaleElementReferenceException. """
+        for _ in range(retries):
+            try:
+                element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+                element.click()
+                return True
+            except StaleElementReferenceException:
+                time.sleep(1)  # Sleep for a short time before retrying
+        return False
+    
 
-    def select_filters(self, wait, region, market, is_selected):
+    def select_filters(self, driver, region, market, is_selected):
+        
+        wait = WebDriverWait(driver, 10)
         # click the "filter" button
+        self.safe_click(driver,"//div[@class='search-filter']//button[@class='button primary punchout inverted advanced']",)
         filter_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@class='search-filter']//button[@class='button primary punchout inverted advanced']")))
         filter_button.click()
 
@@ -93,6 +117,7 @@ class LoopNetScraper:
         submarkets = [element.text for element in submarket_elements]
         return submarkets
 
+
     def collect_market_list(self,*args):
         """ collect single market data, as multiprocessing tasks """
         region, market = args
@@ -100,7 +125,7 @@ class LoopNetScraper:
         wait = WebDriverWait(driver, 10)  # wait up to 10 seconds for loading
         properties_list = []
         try:
-            submarkets = self.select_filters(wait, region, market,False)
+            submarkets = self.select_filters(driver, region, market,False)
 
             for submarket in submarkets:
                 # select the submarket
@@ -115,7 +140,7 @@ class LoopNetScraper:
                 submkt_list = self.scrape_pages(driver, market, submarket)
                 properties_list.extend(submkt_list)
                 # initialize the filter 
-                self.select_filters(wait,region, market,True)
+                self.select_filters(driver,region, market,True)
 
             print(f'Collected {len(submkt_list)} properties from {market}')
 
@@ -145,7 +170,7 @@ class LoopNetScraper:
         return properties_list
                     
 
-    def scrape_pages(self, driver, market, submarket):
+    def scrape_pages(self, driver, market_name, submarket_name):
         """Scrape property listings from multiple pages until no 'Next Page' button exists."""
         submkt_property_list = []
         while True:
@@ -157,7 +182,7 @@ class LoopNetScraper:
                 try:
                     property_address = listing.find_element(By.XPATH, ".//div[@class='header-col header-left']").text
                     city_address = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h6']").text
-                    space = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h4']").text
+                    space_for_lease = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h4']").text
 
                     try:
                         loopnet_tag = listing.find_element(By.XPATH, ".//div[@class='placard-pseudo']/a")
@@ -172,15 +197,15 @@ class LoopNetScraper:
                         image_url = ""
 
                     try:
-                        price = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='Price']").text
+                        price_for_lease = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='Price']").text
                     except:
-                        price = ""
+                        price_for_lease = ""
 
                     try:
-                        availability = listing.find_element(By.XPATH,
+                        is_available = listing.find_element(By.XPATH,
                                                             ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='SpaceAvailable']").text
                     except:
-                        availability = ""
+                        is_available = ""
 
                 except:
                     try:
@@ -213,31 +238,42 @@ class LoopNetScraper:
                         city_address = ""
 
                     try:
-                        space = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[not(@name)]").text
+                        space_for_lease = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[not(@name)]").text
                     except:
-                        space = ""
+                        space_for_lease = ""
 
                     try:
-                        price = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='Price']").text
+                        price_for_lease = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='Price']").text
                     except:
-                        price = ""
+                        price_for_lease = ""
 
                     try:
-                        availability = listing.find_element(By.XPATH,
+                        is_available = listing.find_element(By.XPATH,
                                                             ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='SpaceAvailable']").text
                     except:
-                        availability = ""
+                        is_available = ""
+                
+                try:
+                    city_name,zip_code = city_address.rsplit(", ", 1)
+                except:
+                    city_name = city_address
+                    zip_code = ""
 
-                city,postal_code = city_address.rsplit(", ", 1)
+                try:
+                    property_id = re.search(r'(\d+)/$', loopnet_url)
+                except:
+                    property_id = ""
+
                 submkt_property_list.append({
-                    "property_address": property_address,
-                    "market":market,
-                    "submarket":submarket,
-                    "postal_code":postal_code,
-                    "city":city,
-                    "space": space,
-                    "price": price,
-                    "availability": availability,
+                    "id":property_id,
+                    "address": property_address,
+                    "market":market_name,
+                    "submarket":submarket_name,
+                    "postal_code":zip_code,
+                    "city":city_name,
+                    "space": space_for_lease,
+                    "price": price_for_lease,
+                    "availability": is_available,
                     "image":image_url,
                     "access_link":loopnet_url
                 })
@@ -257,6 +293,24 @@ class LoopNetScraper:
         return submkt_property_list
 
 
-if __name__ == '__main__':
-    loopnet_scrp = LoopNetScraper()
-    properties_list = loopnet_scrp.collect_property_list()
+class Command(BaseCommand):
+    help = "Scrape LoopNet and store property data in the database"
+
+    def handle(self, *args, **options):
+        self.stdout.write("Starting LoopNet Scraper...")
+        loopnet_scraper = LoopNetScraper()
+        scraped_data = loopnet_scraper.collect_property_list()
+
+        # saving scraped data to database
+        for data in scraped_data:
+            property_obj, created = Property.objects.update_or_create(
+                property_id=data["id"],
+                defaults=data
+            )
+            if created:
+                self.stdout.write(f"Added: {property_obj.property_id}")
+            else:
+                self.stdout.write(f"Updated: {property_obj.property_id}")
+
+        self.stdout.write(self.style.SUCCESS("Scraping completed successfully!"))
+
