@@ -79,23 +79,23 @@ class LoopNetScraper:
 
         # click the chosen region, e.g. 'East of England'
         self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[2]/div/div/div/input')
-        self.safe_click(driver, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-15']//div[@id='ui-select-choices-row-15-' and @role='option']//a[normalize-space()='{region}']")
+        self.safe_click(driver, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-15']//div[@id='ui-select-choices-row-15-' and @role='option']//a[normalize-space()=\"{region}\"]")
 
         # click the target market, e.g. 'Manchester'
         self.safe_click(driver, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[5]/div/div/div/input')
-        self.safe_click(driver, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-18']//div[@id='ui-select-choices-row-18-' and @role='option']//a[normalize-space()='{market}']")
+        self.safe_click(driver, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-18']//div[@id='ui-select-choices-row-18-' and @role='option']//a[normalize-space()=\"{market}\"]")
 
         # select space uses, e.g. retail
         for space_use in self.search_filters['space_uses']:
-            retail_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, f"//ul[@class='input-select-multiple multi-select-box space-use']//label[contains(normalize-space(), '{space_use}')]/input[@type='checkbox' and @class='input-checkbox']")))
+            retail_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, f"//ul[@class='input-select-multiple multi-select-box space-use']//label[contains(normalize-space(), \"{space_use}\")]/input[@type='checkbox' and @class='input-checkbox']")))
             if not retail_checkbox.is_selected():
-                self.safe_click(driver,f"//ul[@class='input-select-multiple multi-select-box space-use']//label[contains(normalize-space(), '{space_use}')]/input[@type='checkbox' and @class='input-checkbox']")
+                self.safe_click(driver,f"//ul[@class='input-select-multiple multi-select-box space-use']//label[contains(normalize-space(), \"{space_use}\")]/input[@type='checkbox' and @class='input-checkbox']")
 
         # select use classes, e.g. Sui Generis
         for use_class in self.search_filters['use_classes']:
-            sui_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, f"//ul[@class='input-select-multiple multi-select-box use-class']//label[contains(normalize-space(), '{use_class}')]/input[@type='checkbox' and @class='input-checkbox']")))
+            sui_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, f"//ul[@class='input-select-multiple multi-select-box use-class']//label[contains(normalize-space(), \"{use_class}\")]/input[@type='checkbox' and @class='input-checkbox']")))
             if not sui_checkbox.is_selected():
-                self.safe_click(driver,f"//ul[@class='input-select-multiple multi-select-box use-class']//label[contains(normalize-space(), '{use_class}')]/input[@type='checkbox' and @class='input-checkbox']")
+                self.safe_click(driver,f"//ul[@class='input-select-multiple multi-select-box use-class']//label[contains(normalize-space(), \"{use_class}\")]/input[@type='checkbox' and @class='input-checkbox']")
 
         # output all available submarkets within this market
         self.safe_click(driver, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')
@@ -118,7 +118,7 @@ class LoopNetScraper:
             for submarket in submarkets:
                 # select the submarket
                 self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')
-                self.safe_click(driver,f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-19']//div[@id='ui-select-choices-row-19-' and @role='option']//a[normalize-space()='{submarket}']")
+                self.safe_click(driver,f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-19']//div[@id='ui-select-choices-row-19-' and @role='option']//a[normalize-space()=\"{submarket}\"]")
                 # click search button
                 self.safe_click(driver,'//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary submit"]')
                 # scrape pages' context
@@ -287,13 +287,13 @@ class Command(BaseCommand):
         # saving scraped data to database
         for data in scraped_data:
             property_obj, created = Property.objects.update_or_create(
-                property_id=data["id"],
+                id=data["id"],
                 defaults=data
             )
             if created:
-                self.stdout.write(f"Added: {property_obj.property_id}")
+                self.stdout.write(f"Added: {property_obj.id}")
             else:
-                self.stdout.write(f"Updated: {property_obj.property_id}")
+                self.stdout.write(f"Updated: {property_obj.id}")
 
         self.stdout.write(self.style.SUCCESS("Scraping completed successfully!"))
 
