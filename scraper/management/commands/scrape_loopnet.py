@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from multiprocessing import Pool
 import os
 import time
 import pandas as pd
@@ -92,36 +93,59 @@ class LoopNetScraper:
         submarkets = [element.text for element in submarket_elements]
         return submarkets
 
+    def collect_market_list(self,*args):
+        """ collect single market data, as multiprocessing tasks """
+        region, market = args
+        driver = self.init_google_driver(self.loopNet_url)
+        wait = WebDriverWait(driver, 10)  # wait up to 10 seconds for loading
+        properties_list = []
+        try:
+            submarkets = self.select_filters(wait, region, market,False)
+
+            for submarket in submarkets:
+                # select the submarket
+                dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')))
+                dropdown_button.click()
+                submkt_option =wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-19']//div[@id='ui-select-choices-row-19-' and @role='option']//a[normalize-space()='{submarket}']")))
+                submkt_option.click()
+                # click search button
+                search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary submit"]')))
+                search_button.click()
+                # scrape pages' context
+                submkt_list = self.scrape_pages(driver, market, submarket)
+                properties_list.extend(submkt_list)
+                # initialize the filter 
+                self.select_filters(wait,region, market,True)
+
+            print(f'Collected {len(submkt_list)} properties from {market}')
+
+        except Exception as e:
+            print(f"Error scraping {market}: {e}")
+        
+        finally:
+            driver.quit()
+            return properties_list 
+
 
     def collect_property_list(self):
-        """Scrape property listings from multiple pages until no 'Next Page' button exists."""
+        """Using multiprocessing to scrape different markets"""
         properties_list = []
+        tasks = []
+
         for region in self.search_filters["regions"]:
             for market in self.search_filters["markets"]:
-                driver = self.init_google_driver(self.loopNet_url)
-                wait = WebDriverWait(driver, 10)  # wait up to 10 seconds for loading
-                submarkets = self.select_filters(wait, region, market,False)
-                for submarket in submarkets:
-                    # select the submarket
-                    dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')))
-                    dropdown_button.click()
-                    submkt_option =wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-19']//div[@id='ui-select-choices-row-19-' and @role='option']//a[normalize-space()='{submarket}']")))
-                    submkt_option.click()
-                    # click search button
-                    search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary submit"]')))
-                    search_button.click()
-                    # scrape pages' context
-                    submkt_list = self.scrape_pages(driver)
-                    properties_list.extend(submkt_list)
-                    # initialize the filter 
-                    self.select_filters(wait,region, market,True)
-                    print(f'{market},{submarket} property list is collected successfully!')
-                
+                tasks.append((region, market))
+
+        with Pool(processes=len(self.search_filters["markets"])) as pool:
+            results = pool.starmap(self.collect_market_list, tasks)
+        
+        for result in results:
+             properties_list.extend(result)
+        
         return properties_list
-            
                     
 
-    def scrape_pages(self, driver):
+    def scrape_pages(self, driver, market, submarket):
         """Scrape property listings from multiple pages until no 'Next Page' button exists."""
         submkt_property_list = []
         while True:
@@ -131,61 +155,91 @@ class LoopNetScraper:
 
             for listing in listings:
                 try:
-                    property_area = listing.find_element(By.XPATH, ".//div[@class='header-col header-left']").text
-                    city_address = listing.find_element(By.XPATH, ".//a[@class='right-h6']").text
-                    size = listing.find_element(By.XPATH, ".//a[@class='right-h4']").text
+                    property_address = listing.find_element(By.XPATH, ".//div[@class='header-col header-left']").text
+                    city_address = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h6']").text
+                    space = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h4']").text
 
                     try:
-                        price = listing.find_element(By.XPATH, ".//ul[@class='data-points-a']/li[@name='Price']").text
+                        loopnet_tag = listing.find_element(By.XPATH, ".//div[@class='placard-pseudo']/a")
+                        loopnet_url = loopnet_tag.get_attribute("href")
                     except:
-                        price = "N/A"
+                        loopnet_url = ""
+
+                    try:
+                        image_tag = listing.find_element(By.XPATH,".//div[@class='media']//div[@class='carousel-theme-light xfade carousel  ng-scope']//div[@class='carousel-inner']/div[contains(@class, 'slide') and contains(@class, 'active')]//figure/img")
+                        image_url = image_tag.get_attribute("src")
+                    except:
+                        image_url = ""
+
+                    try:
+                        price = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='Price']").text
+                    except:
+                        price = ""
 
                     try:
                         availability = listing.find_element(By.XPATH,
-                                                            ".//ul[@class='data-points-a']/li[@name='SpaceAvailable']").text
+                                                            ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='SpaceAvailable']").text
                     except:
-                        availability = "N/A"
+                        availability = ""
 
                 except:
                     try:
-                        title = listing.find_element(By.XPATH, ".//h4/a").text
+                        loopnet_tag = listing.find_element(By.XPATH, ".//div[@class='placard-pseudo']/a")
+                        loopnet_url = loopnet_tag.get_attribute("href")
                     except:
-                        title = "N/A"
+                        loopnet_url = ""
+                    
+                    try:
+                        image_tag = listing.find_element(By.XPATH,".//div[@class='media']//div[@class='carousel-view']//div[@class='carousel-inner']/div[contains(@class, 'slide') and contains(@class, 'active')]/figure/img")
+                        image_url = image_tag.get_attribute("src")
+                    except:
+                        image_url = ""
+                    
+                    try:
+                        title = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']//div[normalize-space(@class)='header-col']/h4/a").text
+                    except:
+                        title = ""
 
                     try:
-                        subtitle = listing.find_element(By.XPATH, ".//h6/a").text
+                        subtitle = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']//div[normalize-space(@class)='header-col']/h6/a").text
                     except:
                         subtitle = ""
 
-                    property_area = f"{title}\n{subtitle}".strip(", ")
+                    property_address = f"{title}\n{subtitle}".strip(", ")
 
                     try:
-                        city_address = listing.find_element(By.XPATH, ".//a[@class='subtitle-beta']").text
+                        city_address = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']//div[normalize-space(@class)='header-col']/a[@class='subtitle-beta']").text
                     except:
-                        city_address = "N/A"
+                        city_address = ""
 
                     try:
-                        size = listing.find_element(By.XPATH, ".//ul[@class='data-points-2c']/li[1]").text
+                        space = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[not(@name)]").text
                     except:
-                        size = "N/A"
+                        space = ""
 
                     try:
-                        price = listing.find_element(By.XPATH, ".//ul[@class='data-points-2c']/li[@name='Price']").text
+                        price = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='Price']").text
                     except:
-                        price = "N/A"
+                        price = ""
 
                     try:
                         availability = listing.find_element(By.XPATH,
-                                                            ".//ul[@class='data-points-2c']/li[@name='SpaceAvailable']").text
+                                                            ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='SpaceAvailable']").text
                     except:
-                        availability = "N/A"
+                        availability = ""
 
+                city,postal_code = city_address.rsplit(", ", 1)
                 submkt_property_list.append({
-                    "property_area": property_area,
-                    "city_address": city_address,
-                    "size": size,
+                    "property_address": property_address,
+                    "market":market,
+                    "submarket":submarket,
+                    "postal_code":postal_code,
+                    "city":city,
+                    "space": space,
                     "price": price,
-                    "availability": availability
+                    "availability": availability,
+                    "image":image_url,
+                    "access_link":loopnet_url
                 })
 
             # Try to find the "Next Page" button
