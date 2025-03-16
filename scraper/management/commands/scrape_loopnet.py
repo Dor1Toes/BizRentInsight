@@ -47,8 +47,7 @@ class LoopNetScraper:
 
         driver.get(url)
         # click the search button for accessing advanced filters
-        search_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//div[@class='quick-search-container search-location-container']//div[@class='search-button']")))
-        search_button.click()
+        self.safe_click(driver,"//div[@class='quick-search-container search-location-container']//div[@class='search-button']")
 
         return driver
     
@@ -68,48 +67,38 @@ class LoopNetScraper:
         
         wait = WebDriverWait(driver, 10)
         # click the "filter" button
-        self.safe_click(driver,"//div[@class='search-filter']//button[@class='button primary punchout inverted advanced']",)
-        filter_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@class='search-filter']//button[@class='button primary punchout inverted advanced']")))
-        filter_button.click()
+        self.safe_click(driver,"//div[@class='search-filter']//button[@class='button primary punchout inverted advanced']")
 
         # if already selected filters, then press clear button
         if is_selected:
-            clear_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary punchout clear"]')))
-            clear_button.click()
+            self.safe_click(driver,'//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary punchout clear"]')
 
         # click to choose 'United Kingdom'
-        dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[1]/div/button')))
-        dropdown_button.click()
-        uk_option = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[1]/div/ul/li[4]/button')))
-        uk_option.click()
+        self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[1]/div/button')
+        self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[1]/div/ul/li[4]/button')
 
         # click the chosen region, e.g. 'East of England'
-        dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[2]/div/div/div/input')))
-        dropdown_button.click()
-        region_option =wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-15']//div[@id='ui-select-choices-row-15-' and @role='option']//a[normalize-space()='{region}']")))
-        region_option.click()
+        self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[2]/div/div/div/input')
+        self.safe_click(driver, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-15']//div[@id='ui-select-choices-row-15-' and @role='option']//a[normalize-space()='{region}']")
 
         # click the target market, e.g. 'Manchester'
-        dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[5]/div/div/div/input')))
-        dropdown_button.click()
-        mkt_option = wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-18']//div[@id='ui-select-choices-row-18-' and @role='option']//a[normalize-space()='{market}']")))
-        mkt_option.click()
+        self.safe_click(driver, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[5]/div/div/div/input')
+        self.safe_click(driver, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-18']//div[@id='ui-select-choices-row-18-' and @role='option']//a[normalize-space()='{market}']")
 
         # select space uses, e.g. retail
         for space_use in self.search_filters['space_uses']:
             retail_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, f"//ul[@class='input-select-multiple multi-select-box space-use']//label[contains(normalize-space(), '{space_use}')]/input[@type='checkbox' and @class='input-checkbox']")))
             if not retail_checkbox.is_selected():
-                retail_checkbox.click()
+                self.safe_click(driver,f"//ul[@class='input-select-multiple multi-select-box space-use']//label[contains(normalize-space(), '{space_use}')]/input[@type='checkbox' and @class='input-checkbox']")
 
         # select use classes, e.g. Sui Generis
         for use_class in self.search_filters['use_classes']:
             sui_checkbox = wait.until(EC.element_to_be_clickable((By.XPATH, f"//ul[@class='input-select-multiple multi-select-box use-class']//label[contains(normalize-space(), '{use_class}')]/input[@type='checkbox' and @class='input-checkbox']")))
             if not sui_checkbox.is_selected():
-                sui_checkbox.click()
+                self.safe_click(driver,f"//ul[@class='input-select-multiple multi-select-box use-class']//label[contains(normalize-space(), '{use_class}')]/input[@type='checkbox' and @class='input-checkbox']")
 
         # output all available submarkets within this market
-        dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')))
-        dropdown_button.click()
+        self.safe_click(driver, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')
         time.sleep(1)
         submarket_elements = wait.until(EC.presence_of_all_elements_located(
             (By.XPATH, "//li[@class='ui-select-choices-group']//div[@id='ui-select-choices-row-19-']//a[@class='ui-select-choices-row-inner']")
@@ -122,27 +111,23 @@ class LoopNetScraper:
         """ collect single market data, as multiprocessing tasks """
         region, market = args
         driver = self.init_google_driver(self.loopNet_url)
-        wait = WebDriverWait(driver, 10)  # wait up to 10 seconds for loading
         properties_list = []
         try:
             submarkets = self.select_filters(driver, region, market,False)
 
             for submarket in submarkets:
                 # select the submarket
-                dropdown_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')))
-                dropdown_button.click()
-                submkt_option =wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-19']//div[@id='ui-select-choices-row-19-' and @role='option']//a[normalize-space()='{submarket}']")))
-                submkt_option.click()
+                self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[6]/div/div/div/input')
+                self.safe_click(driver,f"//li[@class='ui-select-choices-group' and @id='ui-select-choices-19']//div[@id='ui-select-choices-row-19-' and @role='option']//a[normalize-space()='{submarket}']")
                 # click search button
-                search_button = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary submit"]')))
-                search_button.click()
+                self.safe_click(driver,'//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary submit"]')
                 # scrape pages' context
                 submkt_list = self.scrape_pages(driver, market, submarket)
                 properties_list.extend(submkt_list)
                 # initialize the filter 
                 self.select_filters(driver,region, market,True)
 
-            print(f'Collected {len(submkt_list)} properties from {market}')
+            print(f'Collected {len(properties_list)} properties from {market}')
 
         except Exception as e:
             print(f"Error scraping {market}: {e}")
@@ -260,7 +245,8 @@ class LoopNetScraper:
                     zip_code = ""
 
                 try:
-                    property_id = re.search(r'(\d+)/$', loopnet_url)
+                    match = re.search(r'(\d+)/$', loopnet_url)
+                    property_id = match.group(1) if match else ""
                 except:
                     property_id = ""
 
@@ -280,11 +266,8 @@ class LoopNetScraper:
 
             # Try to find the "Next Page" button
             try:
-                next_page_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//a[@data-automation-id='NextPage']"))
-                )
-                next_page_button.click()  # Click to go to the next page
-
+                # Click to go to the next page
+                self.safe_click(driver,"//a[@data-automation-id='NextPage']")
             except:
                 print("No more pages to scrape. Exiting loop.")
                 break
