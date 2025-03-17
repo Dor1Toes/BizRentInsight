@@ -39,6 +39,8 @@ class LoopNetScraper:
         chrome_options = Options()
         # chrome_options.add_argument("--headless")  # Uncomment to run in headless mode
         chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--ignore-certificate-errors")
+        chrome_options.add_argument("--ignore-ssl-errors")  
         chrome_options.add_argument("--window-size=1440,1080")
 
         print("Initializing Chrome WebDriver...")
@@ -69,9 +71,12 @@ class LoopNetScraper:
         # click the "filter" button
         self.safe_click(driver,"//div[@class='search-filter']//button[@class='button primary punchout inverted advanced']")
 
-        # if already selected filters, then press clear button
+        # if already selected filters, then clear submarket selected
         if is_selected:
-            self.safe_click(driver,'//div[@class="ribbon actions advanced-filters-actions"]//button[@class="button primary punchout clear"]')
+            time.sleep(0.5)
+            close_button = driver.find_element(By.XPATH, "//div[contains(@class, 'submarket-group') and contains(@class, 'field-group')]//div[contains(@class, 'ui-select-container')]//span[contains(@class, 'ui-select-match')]//span[contains(@class,'close') and contains(@class, 'ui-select-match-close')]")
+            driver.execute_script("arguments[0].click();", close_button)
+            return
 
         # click to choose 'United Kingdom'
         self.safe_click(driver,'//*[@id="top"]/section[1]/div[2]/div[2]/div/click-event-bridge/section/form/div[4]/section[2]/div[1]/div/button')
@@ -165,9 +170,9 @@ class LoopNetScraper:
 
             for listing in listings:
                 try:
-                    property_address = listing.find_element(By.XPATH, ".//div[@class='header-col header-left']").text
-                    city_address = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h6']").text
-                    space_for_lease = listing.find_element(By.XPATH, ".//div[@class='header-col header-right text-right']//a[@class='right-h4']").text
+                    property_address = listing.find_element(By.XPATH, ".//div[contains(@class, 'header-col') and contains(@class, 'header-left')]").text
+                    city_address = listing.find_element(By.XPATH, ".//div[contains(@class, 'header-col') and contains(@class, 'header-right') and contains(@class, 'text-right')]//a[@class='right-h6']").text
+                    space_for_lease = listing.find_element(By.XPATH, ".//div[contains(@class, 'header-col') and contains(@class, 'header-right') and contains(@class, 'text-right')]//a[@class='right-h4']").text
 
                     try:
                         loopnet_tag = listing.find_element(By.XPATH, ".//div[@class='placard-pseudo']/a")
@@ -176,19 +181,19 @@ class LoopNetScraper:
                         loopnet_url = ""
 
                     try:
-                        image_tag = listing.find_element(By.XPATH,".//div[@class='media']//div[@class='carousel-theme-light xfade carousel  ng-scope']//div[@class='carousel-inner']/div[contains(@class, 'slide') and contains(@class, 'active')]//figure/img")
+                        image_tag = listing.find_element(By.XPATH,".//div[@class='media']//div[@class='carousel-inner']/div[contains(@class, 'slide') and contains(@class, 'active')]//figure/img")
                         image_url = image_tag.get_attribute("src")
                     except:
                         image_url = ""
 
                     try:
-                        price_for_lease = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='Price']").text
+                        price_for_lease = listing.find_element(By.XPATH, ".//div[contains(@class, 'placard-content')]/div[contains(@class, 'placard-info')]/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='Price']").text
                     except:
                         price_for_lease = ""
 
                     try:
                         is_available = listing.find_element(By.XPATH,
-                                                            ".//div[normalize-space(@class)='placard-content']/div[normalize-space(@class)='placard-info   placard-info-mobile-skeleton']/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='SpaceAvailable']").text
+                                                            ".//div[contains(@class, 'placard-content')]/div[contains(@class, 'placard-info')]/div[normalize-space(@class)='data']/ul[@class='data-points-a']/li[@name='SpaceAvailable']").text
                     except:
                         is_available = ""
 
@@ -206,35 +211,35 @@ class LoopNetScraper:
                         image_url = ""
                     
                     try:
-                        title = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']//div[normalize-space(@class)='header-col']/h4/a").text
+                        title = listing.find_element(By.XPATH, ".//div[contains(@class, 'placard-content')]//div[normalize-space(@class)='header-col']/h4/a").text
                     except:
                         title = ""
 
                     try:
-                        subtitle = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']//div[normalize-space(@class)='header-col']/h6/a").text
+                        subtitle = listing.find_element(By.XPATH, ".//div[contains(@class, 'placard-content')]//div[normalize-space(@class)='header-col']/h6/a").text
                     except:
                         subtitle = ""
 
                     property_address = f"{title}\n{subtitle}".strip(", ")
 
                     try:
-                        city_address = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']//div[normalize-space(@class)='header-col']/a[@class='subtitle-beta']").text
+                        city_address = listing.find_element(By.XPATH, ".//div[contains(@class, 'placard-content')]//div[normalize-space(@class)='header-col']/a[@class='subtitle-beta']").text
                     except:
                         city_address = ""
 
                     try:
-                        space_for_lease = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[not(@name)]").text
+                        space_for_lease = listing.find_element(By.XPATH, ".//div[contains(@class, 'placard-content')]//div[contains(@class, 'placard-info')]//ul[@class='data-points-2c']/li[not(@name)]").text
                     except:
                         space_for_lease = ""
 
                     try:
-                        price_for_lease = listing.find_element(By.XPATH, ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='Price']").text
+                        price_for_lease = listing.find_element(By.XPATH, ".//div[contains(@class, 'placard-content')]//div[contains(@class, 'placard-info')]//ul[@class='data-points-2c']/li[@name='Price']").text
                     except:
                         price_for_lease = ""
 
                     try:
                         is_available = listing.find_element(By.XPATH,
-                                                            ".//div[normalize-space(@class)='placard-content show-logos']/div[normalize-space(@class)='placard-info show-logos']//ul[@class='data-points-2c']/li[@name='SpaceAvailable']").text
+                                                            ".//div[contains(@class, 'placard-content')]//div[contains(@class, 'placard-info')]//ul[@class='data-points-2c']/li[@name='SpaceAvailable']").text
                     except:
                         is_available = ""
                 
@@ -261,18 +266,20 @@ class LoopNetScraper:
                     "price": price_for_lease,
                     "availability": is_available,
                     "image":image_url,
-                    "access_link":loopnet_url
+                    "access_link":loopnet_url,
+                    "is_expired":False,
                 })
-
+                
+            submkt_property_list.pop()
             # Try to find the "Next Page" button
             try:
-                # Click to go to the next page
+                # Click to go to the next page if exists
+                driver.find_element(By.XPATH,"//a[@data-automation-id='NextPage']")
                 self.safe_click(driver,"//a[@data-automation-id='NextPage']")
             except:
-                print("No more pages to scrape. Exiting loop.")
+                print(f"Scraped {len(submkt_property_list)} results from {submarket_name},{market_name}")
                 break
         
-        submkt_property_list.pop()
         return submkt_property_list
 
 
@@ -297,3 +304,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Scraping completed successfully!"))
 
+if __name__ == '__main__':
+    test = LoopNetScraper()
+    results = test.collect_property_list()
+    print(results)

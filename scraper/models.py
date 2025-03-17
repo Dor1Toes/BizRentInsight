@@ -13,6 +13,7 @@ class Property(models.Model):
     availability = models.CharField(max_length=100)
     image = models.URLField(max_length=255)
     access_link = models.URLField(max_length=255)
+    is_expired = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.property_id} - {self.submarket}"
