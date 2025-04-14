@@ -1,0 +1,20 @@
+/* Figma Styles of your File */
+:root {
+  /* Colors */
+  --bizrent-primary: linear-gradient(
+      to left,
+      rgba(36, 104, 152, 0.27),
+      rgba(36, 104, 152, 0.27)
+    ),
+    linear-gradient(to left, rgba(65, 195, 132, 0.67), rgba(65, 195, 132, 0.67)),
+    linear-gradient(to left, rgba(200, 132, 54, 0.88), rgba(200, 132, 54, 0.88));
+
+  /* Fonts */
+  --body-font-family: Siemreap-Regular, sans-serif;
+  --body-font-size: 16px;
+  --body-line-height: 28px;
+  --body-font-weight: 400;
+  --body-font-style: normal;
+
+  /* Effects */
+}

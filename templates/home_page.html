@@ -1,0 +1,381 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'home_page/css/vars.css' %}">
+  <link rel="stylesheet" href="{% static 'home_page/css/style.css' %}">
+  
+  <style>
+   a,
+   button,
+   input,
+   select,
+   h1,
+   h2,
+   h3,
+   h4,
+   h5,
+   * {
+       box-sizing: border-box;
+       margin: 0;
+       padding: 0;
+       border: none;
+       text-decoration: none;
+       background: none;
+       -webkit-font-smoothing: antialiased;
+   }
+   
+   menu, ol, ul {
+       list-style-type: none;
+       margin: 0;
+       padding: 0;
+   }
+   </style>
+    <style>
+    /* 适用于下拉菜单的样式 */
+    .home-page select {
+      background: #f5f5f5;
+      border-radius: 8px;
+      border: 1px solid #d9d9d9;
+      min-height: 40px; /* 允许元素根据内容调整高度 */
+      padding: 8px 12px;
+      font-size: 16px;
+      font-family: "Inter-Regular", sans-serif;
+      color: #1e1e1e;
+      width: 240px;
+      height: 40px;
+      box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+      appearance: none; /* 移除默认箭头 */
+      cursor: pointer;
+    }
+
+    /* 让 select 可见并模拟 div 的样式 */
+    .home-page select:focus,
+    .home-page select:hover {
+      border-color: #007bff;
+      outline: none;
+    }
+
+    /* 让箭头图标对齐 */
+    .select-wrapper {
+      background: #f5f5f5;
+      border-radius: var(--var-sds-size-radius-200, 8px);
+      border-style: solid;
+      border-color: var(--var-sds-color-border-default-default, #d9d9d9);
+      border-width: 1px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+    }
+
+    /* 伪元素模拟箭头 */
+    .select-wrapper::after {
+      content: "▼";
+      font-size: 14px;
+      color: #1e1e1e;
+      position: absolute;
+      right: 16px;
+      pointer-events: none;
+    }
+
+    /* Categories 样式改进 */
+    .categories-field {
+        left: 50%; /* 与 .search-bar 左对齐 */
+        bottom: 12%; /* 使其保持相对位置 */
+        height: 80px;
+        width: 325px; /* 修正了号 */
+        position: absolute; /* 修改为相对定位，避免影响其他元素 */
+    }
+
+    /* Categories 选择框，与 Market、Submarket 一致 */
+    .categories-dropdown {
+        background: #f5f5f5;
+        border-radius: 8px;
+        border: 1px solid #d9d9d9;
+        min-height: 45px;
+        max-height: 200px;
+        padding: 8px 12px;
+        font-size: 16px;
+        font-family: "Inter-Regular", sans-serif;
+        color: #1e1e1e;
+        width: 100%; /* 修正为100%以适应父容器宽度 */
+        display: flex;
+        align-items: flex-start;
+        cursor: pointer;
+        position: relative; /* 修改为相对定位 */
+        flex-direction: column; /* 垂直排列 */
+        overflow: hidden;
+    }
+
+    /* 选中的类别区域，防止撑满 */
+    .selected-categories {
+        display: flex;
+        flex-wrap: wrap;  /* 允许换行 */
+        white-space: normal;
+        gap: 5px;
+        max-height: 81px; /* 设置最大高度，超出部分可滚动 */
+        overflow: auto;
+        width: 100%;
+    }
+
+    .categories-field .select-wrapper::after {
+    display: none;
+    }
+
+    /* 下拉列表优化 */
+    .dropdown-list {
+        top: 100%; /* 从框的底部开始显示 */
+        display: none;
+        position: absolute;
+        width: 100%; /* 保证下拉菜单宽度与选择框一致 */
+        max-height: 200px; /* 限制最大高度 */
+        overflow-y: auto; /* 允许滚动 */
+        background-color: white;
+        border: 1px solid #ccc;
+        list-style-type: none;
+        padding: 8px 12px; /* 控制选项内边距 */
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+        white-space: nowrap; /* 防止文字换行导致高度变大 */
+        margin: 0;
+        z-index: 9999; /* 确保下拉菜单不会被遮挡 */
+    }
+
+    /* 选项优化 */
+    .dropdown-list li {
+        padding: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+    }
+
+    .dropdown-list li:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* 已选类别项样式 */
+    .category-item {
+        background-color: #007bff;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        display: inline-flex;
+        justify-content: space-between; /* 分开文本和按钮 */
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+        width: auto;
+        max-width: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 删除按钮 */
+    .category-item .remove-category {
+        cursor: pointer;
+        font-weight: bold;
+        color: #fff;
+        margin-left: 5px;
+    }
+
+    .category-item .remove-category:hover {
+        color: #d9534f;
+    }
+  </style>
+  <title>Home Page</title>
+</head>
+<body>
+  <div class="home-page">
+    <div class="search-bar">
+      <div class="market-field">
+        <label for="market">Market</label>
+        <div class="select-wrapper">
+          <select id="market">
+            <option value="">Select a Market</option>
+            <option value="London">London</option>
+            <option value="Birmingham">Birmingham</option>
+            <option value="Manchester">Manchester</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="submarket-field">
+        <label for="submarket">Submarket</label>
+        <div class="select-wrapper">
+          <select id="submarket">
+            <option value=""></option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="categories-field">
+        <label for="categories">Categories</label>
+        <div class="select-wrapper">
+          <div class="categories-dropdown" id="categories-dropdown">
+            <div class="selected-categories" style="display: flex; align-items: center; justify-content: center; text-align: center; width: 100%; height: 100%;">
+            Click to Add Business Categories
+            </div>
+            <select id="categories-select" multiple hidden>
+              <option value="Breakfast &amp; Brunch">Breakfast &amp; Brunch</option>
+              <option value="British">British</option>
+              <option value="Cafes">Cafes</option>
+              <option value="Chinese">Chinese</option>
+              <option value="Thai">Thai</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div id="search-button" class="search-button">
+        <img class="search" src="{% static 'home_page/images/search0.svg' %}" />
+        <div class="button">Search</div>
+      </div>
+    </div>
+    <div class="title">
+      <div class="biz-rent-insight">BizRent Insight</div>
+      <div class="f-b-commercial-properties-recommendations-in-uk">
+        F&amp;B Commercial Properties Recommendations in UK
+      </div>
+    </div>
+    <div class="top-bar">
+      <div class="button2">
+        <div class="button3">Sign in</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- JavaScript 逻辑 -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const submarkets = {
+        London: ["Barking & Dagenham", "Barnet", "Bexley"],
+        Birmingham: ["Oxford City Centre", "Cowley Road", "Headington"],
+        Manchester: ["Sheffield City Centre", "Ecclesall Road", "Kelham Island"]
+      };
+
+      const marketSelect = document.getElementById("market");
+      const submarketSelect = document.getElementById("submarket");
+
+      marketSelect.addEventListener("change", function () {
+        const selectedMarket = this.value;
+
+        // 清空 Submarket 选项
+        submarketSelect.innerHTML = '';
+
+        // 添加新的选项
+        if (selectedMarket && submarkets[selectedMarket]) {
+          submarkets[selectedMarket].forEach(submarket => {
+            let option = document.createElement("option");
+            option.textContent = submarket;
+            submarketSelect.appendChild(option);
+          });
+        }
+      });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const dropdown = document.getElementById("categories-dropdown");
+        const selectedCategoriesContainer = document.querySelector(".selected-categories");
+        const categorySelect = document.getElementById("categories-select");
+
+        // 创建下拉菜单列表
+        const dropdownList = document.createElement("ul");
+        dropdownList.classList.add("dropdown-list");
+
+        // 添加选项到 `dropdownList`
+        Array.from(categorySelect.options).forEach(option => {
+            const li = document.createElement("li");
+            li.textContent = option.text;
+            li.dataset.value = option.value;
+            dropdownList.appendChild(li);
+        });
+
+        // 将下拉菜单插入到 `categories-dropdown` 之后
+        dropdown.parentElement.appendChild(dropdownList);
+
+        let selectedCategories = [];
+
+        // 点击 `Categories` 时显示/隐藏下拉菜单
+        dropdown.addEventListener("click", function (event) {
+            event.stopPropagation();  // 防止点击事件冒泡到 `document`
+            dropdownList.style.display = dropdownList.style.display === "block" ? "none" : "block";
+        });
+
+        // 选择类别并添加到已选类别
+        dropdownList.addEventListener("click", function (event) {
+            event.stopPropagation();
+            if (event.target.tagName === "LI") {
+                const category = event.target.dataset.value;
+                if (!selectedCategories.includes(category)) {
+                    selectedCategories.push(category);
+                    updateSelectedCategories();
+                }
+            }
+        });
+
+        // 更新已选类别
+        function updateSelectedCategories() {
+            selectedCategoriesContainer.innerHTML = "";
+            if (selectedCategories.length === 0) {
+                selectedCategoriesContainer.textContent = "Select Categories";
+            } else {
+                selectedCategories.forEach(category => {
+                    const categoryElement = document.createElement("div");
+                    categoryElement.classList.add("category-item");
+                    categoryElement.innerHTML = `${category} <span class="remove-category">&times;</span>`;
+
+                    // 绑定删除事件
+                    categoryElement.querySelector(".remove-category").addEventListener("click", function (event) {
+                        event.stopPropagation();
+                        selectedCategories = selectedCategories.filter(item => item !== category);
+                        updateSelectedCategories();
+                    });
+
+                    selectedCategoriesContainer.appendChild(categoryElement);
+                });
+            }
+        }
+
+        // 点击页面其他地方时关闭下拉菜单
+        document.addEventListener("click", function () {
+            dropdownList.style.display = "none";
+        });
+    });
+
+    document.getElementById("search-button").addEventListener("click", function () {
+      const market = document.getElementById("market").value;
+      const submarket = document.getElementById("submarket").value;
+      const selectedCategories = Array.from(
+        document.querySelectorAll(".selected-categories .category-item")
+      ).map(item => item.textContent.trim().replace("×", "")).filter(text => text !== "");
+      
+      if (!market) {
+        alert("Please select a market.");
+        return;
+      }
+      
+      if (selectedCategories.length === 0) {
+        alert("Please select at least one category.");
+        return; 
+      }
+
+      const params = new URLSearchParams();
+      params.append("market", market);
+      if (submarket) params.append("submarket", submarket);
+      params.append("categories", selectedCategories.join(", "));
+
+      // 打印 params
+      console.log("Generated Params:", params.toString());
+
+      // 跳转到 result_page 携带筛选条件
+      window.location.href = `/results?${params.toString()}`;
+    });
+
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,713 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'results_page/css/vars.css' %}">
+  <link rel="stylesheet" href="{% static 'results_page/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'swiper/swiper-bundle.min.css' %}">
+  <script src="{% static 'swiper/swiper-bundle.min.js' %}"></script>
+  
+  <style>
+   a,
+   button,
+   input,
+   select,
+   h1,
+   h2,
+   h3,
+   h4,
+   h5,
+   * {
+       box-sizing: border-box;
+       margin: 0;
+       padding: 0;
+       border: none;
+       text-decoration: none;
+       background: none;
+   
+       -webkit-font-smoothing: antialiased;
+   }
+   
+   menu, ol, ul {
+       list-style-type: none;
+       margin: 0;
+       padding: 0;
+   }
+
+    /* Similar style to the second page's select */
+   .search-bar select {
+      background: #f5f5f5;
+      border-radius: 8px;
+      border: 1px solid #d9d9d9;
+      min-height: 40px;
+      padding: 8px 12px;
+      font-size: 16px;
+      font-family: "Inter-Regular", sans-serif;
+      color: #1e1e1e;
+      width: 240px;
+      height: 40px;
+      box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+      appearance: none; /* Remove default dropdown arrow */
+      cursor: pointer;
+   }
+
+   /* Styles for the select on hover/focus */
+   .search-bar select:focus,
+   .search-bar select:hover {
+      border-color: #007bff;
+      outline: none;
+   }
+
+   /* Wrapper for select to add custom arrow */
+   .select-wrapper {
+      background: #f5f5f5;
+      border-radius: var(--var-sds-size-radius-200, 8px);
+      border-style: solid;
+      border-color: var(--var-sds-color-border-default-default, #d9d9d9);
+      border-width: 1px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+   }
+
+   .select-wrapper::after {
+      content: "▼";
+      font-size: 14px;
+      color: #1e1e1e;
+      position: absolute;
+      right: 16px;
+      pointer-events: none;
+   }
+
+   /* Style for categories dropdown and selected items */
+   /* Categories Dropdown */
+    .categories-dropdown {
+        background: #f5f5f5;
+        border-radius: 8px;
+        border: 1px solid #d9d9d9;
+        min-height: 45px;
+        max-height: 200px;
+        padding: 8px 12px;
+        font-size: 16px;
+        font-family: "Inter-Regular", sans-serif;
+        color: #1e1e1e;
+        width: 100%; /* 修正为100%以适应父容器宽度 */
+        display: flex;
+        align-items: flex-start;
+        cursor: pointer;
+        position: relative; /* 修改为相对定位 */
+        flex-direction: column; /* 垂直排列 */
+        overflow: hidden;
+    }
+
+    /* 选中的类别区域，防止撑满 */
+    .selected-categories {
+        display: flex;
+        flex-wrap: wrap;  /* 允许换行 */
+        white-space: normal;
+        gap: 5px;
+        max-height: 81px; /* 设置最大高度，超出部分可滚动 */
+        overflow: auto;
+        width: 100%;
+    }
+
+    .categories-field {
+        left: 50%; /* 与 .search-bar 左对齐 */
+        bottom: 12%; /* 使其保持相对位置 */
+        height: 80px;
+        width: 325px; /* 修正了号 */
+        position: absolute; /* 修改为相对定位，避免影响其他元素 */
+    }
+
+    .categories-field .select-wrapper::after {
+    display: none;
+    }
+
+    /* 下拉列表优化 */
+    .dropdown-list {
+        top: 100%; /* 从框的底部开始显示 */
+        display: none;
+        position: absolute;
+        width: 100%; /* 保证下拉菜单宽度与选择框一致 */
+        max-height: 200px; /* 限制最大高度 */
+        overflow-y: auto; /* 允许滚动 */
+        background-color: white;
+        border: 1px solid #ccc;
+        list-style-type: none;
+        padding: 8px 12px; /* 控制选项内边距 */
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+        white-space: nowrap; /* 防止文字换行导致高度变大 */
+        margin: 0;
+        z-index: 9999; /* 确保下拉菜单不会被遮挡 */
+    }
+
+    /* 选项优化 */
+    .dropdown-list li {
+        padding: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+    }
+
+    .dropdown-list li:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* 已选类别项样式 */
+    .category-item {
+        background-color: #007bff;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        display: inline-flex;
+        justify-content: space-between; /* 分开文本和按钮 */
+        align-items: center;
+        gap: 5px;
+        font-size: 14px;
+        width: auto;
+        max-width: none;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* 删除按钮 */
+    .category-item .remove-category {
+        cursor: pointer;
+        font-weight: bold;
+        color: #fff;
+        margin-left: 5px;
+    }
+
+    .category-item .remove-category:hover {
+        color: #d9534f;
+    }
+
+    /* 基本样式 */
+    .card-grid-content-list {
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .swiper-container {
+      width: 100%;
+      height: 100%;
+      padding-bottom: 40px;
+    }
+
+    .swiper-wrapper {
+      display: flex;
+    }
+
+    .swiper-slide {
+      width: 290px;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .card .image {
+      width: 50%;
+      height: 100px;
+      object-fit: cover;
+    }
+
+    .card .body {
+      padding: 0px;
+    }
+
+    .card .title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .card .body-text-for-whatever {
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* 分页按钮样式 */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .pagination-previous, .pagination-next {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .arrow-left, .arrow-right {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .page-number {
+        cursor: pointer;
+        margin: 0 5px;
+        padding: 5px 10px;
+        border-radius: 4px;
+    }
+
+    .page-number.current {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .page-number:hover {
+        background-color: #f0f0f0;
+    }
+
+    .back-button {
+      cursor: pointer;
+    }
+
+   </style>
+  <title>Document</title>
+</head>
+<body>
+  <div class="properties-page">
+    <div class="card-grid-content-list">
+      <div class="card-grid-image">
+        <div class="cards swiper-container">
+          <div class="swiper-wrapper">
+            <!-- Properties will be injected here by JavaScript -->
+          </div>
+        </div>
+      </div>
+      <div class="paginations">
+        <div class="pagination">
+          <div class="pagination-previous" id="prev-button">
+            <img class="arrow-left" src="/static/results_page/images/arrow-left0.svg">
+            <div class="previous">Previous</div>
+          </div>
+          <div class="page-numbers" id="page-numbers">
+            <!-- 页码将被动态插入这里 -->
+          </div>
+          <div class="pagination-next" id="next-button">
+            <div class="next">Next</div>
+            <img class="arrow-right" src="/static/results_page/images/arrow-right0.svg">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <!-- Market Selection -->
+      <div class="market-field">
+        <label for="market">Market</label>
+        <div class="select-wrapper">
+          <select id="market">
+            <option value="">Select a Market</option>
+            <option value="London">London</option>
+            <option value="Birmingham">Birmingham</option>
+            <option value="Manchester">Manchester</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Submarket Selection -->
+      <div class="submarket-field">
+        <label for="submarket">Submarket</label>
+        <div class="select-wrapper">
+          <select id="submarket">
+            <option value="">Select a Submarket</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Categories Selection -->
+      <div class="categories-field">
+        <label for="categories">Categories</label>
+        <div class="select-wrapper">
+          <div class="categories-dropdown" id="categories-dropdown">
+            <div class="selected-categories">
+              Click to Add Categories
+            </div>
+            <select id="categories-select" multiple hidden>
+              <option value="Breakfast &amp; Brunch">Breakfast &amp; Brunch</option>
+              <option value="British">British</option>
+              <option value="Cafes">Cafes</option>
+              <option value="Chinese">Chinese</option>
+              <option value="Thai">Thai</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Button -->
+      <div class="search-button" id="search-button">
+        <img class="search" src="{% static 'results_page/images/search0.svg' %}" />
+        <div class="button">Search</div>
+      </div>
+    </div>
+
+
+
+    <div class="top-bar">
+      <div class="favorites-button">
+        <img class="star" src="{% static 'results_page/images/star0.svg' %}" />
+        <div class="favorites">Favorites</div>
+      </div>
+      <div class="account-button">
+        <img class="user" src="{% static 'results_page/images/user0.svg' %}" />
+        <div class="account">Account</div>
+      </div>
+      <div class="back-button" id="back-button">
+        <img class="corner-left-up" src="{% static 'results_page/images/corner-left-up0.svg' %}" />
+        <div class="back">Back</div>
+      </div>
+    </div>
+  </div>
+ <script>
+    function getFiltersFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const market = urlParams.get("market");
+      const submarket = urlParams.get("submarket");
+      const categories = urlParams.get("categories")
+        ? urlParams.get("categories")
+        : "";
+
+      return { market, submarket, categories };
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const submarkets = {
+        London: ["Barking & Dagenham", "Barnet", "Bexley"],
+        Birmingham: ["Brindleyplace", "City Core", "Dudley"],
+        Manchester: ["Bolton", "City Core", "Northern Fringe"]
+      };
+
+      const marketSelect = document.getElementById("market");
+      const submarketSelect = document.getElementById("submarket");
+
+      marketSelect.addEventListener("change", function () {
+        const selectedMarket = this.value;
+
+        // 清空 Submarket 选项
+        submarketSelect.innerHTML = '';
+
+        // 添加新的选项
+        if (selectedMarket && submarkets[selectedMarket]) {
+          submarkets[selectedMarket].forEach(submarket => {
+            let option = document.createElement("option");
+            option.textContent = submarket;
+            submarketSelect.appendChild(option);
+          });
+        }
+      });
+    });
+
+    document.getElementById("search-button").addEventListener("click", function () {
+      const market = document.getElementById("market").value;
+      const submarket = document.getElementById("submarket").value;
+      const selectedCategories = Array.from(
+        document.querySelectorAll(".selected-categories .category-item")
+      ).map(item => item.textContent.trim().replace("×", "")).filter(text => text !== "");
+      
+      if (!market) {
+        alert("Please select a market.");
+        return;
+      }
+      
+      if (selectedCategories.length === 0) {
+        alert("Please select at least one category.");
+        return; 
+      }
+
+      const params = new URLSearchParams();
+      params.append("market", market);
+      if (submarket) params.append("submarket", submarket);
+      params.append("categories", selectedCategories.join(", "));
+
+      // 打印 params
+      console.log("Generated Params:", params.toString());
+
+      // 跳转到 result_page 携带筛选条件
+      window.location.href = `/results?${params.toString()}`;
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const dropdown = document.getElementById("categories-dropdown");
+        const selectedCategoriesContainer = document.querySelector(".selected-categories");
+        const categorySelect = document.getElementById("categories-select");
+
+        // 创建下拉菜单列表
+        const dropdownList = document.createElement("ul");
+        dropdownList.classList.add("dropdown-list");
+
+        // 添加选项到 `dropdownList`
+        Array.from(categorySelect.options).forEach(option => {
+            const li = document.createElement("li");
+            li.textContent = option.text;
+            li.dataset.value = option.value;
+            dropdownList.appendChild(li);
+        });
+
+        // 将下拉菜单插入到 `categories-dropdown` 之后
+        dropdown.parentElement.appendChild(dropdownList);
+
+        let selectedCategories = [];
+
+        // 点击 `Categories` 时显示/隐藏下拉菜单
+        dropdown.addEventListener("click", function (event) {
+            event.stopPropagation();  // 防止点击事件冒泡到 `document`
+            dropdownList.style.display = dropdownList.style.display === "block" ? "none" : "block";
+        });
+
+        // 选择类别并添加到已选类别
+        dropdownList.addEventListener("click", function (event) {
+            event.stopPropagation();
+            if (event.target.tagName === "LI") {
+                const category = event.target.dataset.value;
+                if (!selectedCategories.includes(category)) {
+                    selectedCategories.push(category);
+                    updateSelectedCategories();
+                }
+            }
+        });
+
+        // 更新已选类别
+        function updateSelectedCategories() {
+            selectedCategoriesContainer.innerHTML = "";
+            if (selectedCategories.length === 0) {
+                selectedCategoriesContainer.textContent = "Select Categories";
+            } else {
+                selectedCategories.forEach(category => {
+                    const categoryElement = document.createElement("div");
+                    categoryElement.classList.add("category-item");
+                    categoryElement.innerHTML = `${category} <span class="remove-category">&times;</span>`;
+
+                    // 绑定删除事件
+                    categoryElement.querySelector(".remove-category").addEventListener("click", function (event) {
+                        event.stopPropagation();
+                        selectedCategories = selectedCategories.filter(item => item !== category);
+                        updateSelectedCategories();
+                    });
+
+                    selectedCategoriesContainer.appendChild(categoryElement);
+                });
+            }
+        }
+
+        // 点击页面其他地方时关闭下拉菜单
+        document.addEventListener("click", function () {
+            dropdownList.style.display = "none";
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+      // 从 Django 模板中获取 properties_json
+      const properties = JSON.parse('{{ properties_json|escapejs }}');
+
+      // 调试输出，确认数据是否正确
+      console.log(properties); 
+
+      const swiperWrapper = document.querySelector('.swiper-wrapper');
+      // 每页显示多少个属性
+      const itemsPerPage = 6;
+      let currentPage = 0; // 当前页
+      const totalProperties = properties.length;
+      const totalPages = Math.ceil(totalProperties / itemsPerPage);
+
+      // 过滤空值或者null
+      function displayValue(val) {
+        return val && val.trim() !== "" ? val : null;
+      }
+
+      // Function to render properties for the current page
+      function renderPropertiesForPage(page) {
+        // 清空现有的卡片
+        swiperWrapper.innerHTML = '';
+
+        // 计算起始和结束索引
+        const start = page * itemsPerPage;
+        const end = Math.min(start + itemsPerPage, totalProperties);
+
+        // 动态加载当前页的属性
+        for (let i = start; i < end; i++) {
+          const property = properties[i];
+          const card = document.createElement('div');
+          card.classList.add('swiper-slide');
+          
+          // 使用数组来拼接 HTML 字符串
+          const cardContentArray = [
+            `<div class="card">
+              <img class="image" src="${property.image}" loading="lazy">
+              <div class="body">
+                <div class="text">
+                  <div class="title">${property.address}</div>`
+          ];
+
+          // 仅在字段有有效值时插入对应的内容
+          const price = displayValue(property.price);
+          const space = displayValue(property.space);
+          const availability = displayValue(property.availability);
+
+          if (price || space || availability) {
+            cardContentArray.push(`
+              <div class="body-text-for-whatever">
+                ${price ? price : ''} ${space ? `| ${space}` : ''} ${availability ? `| ${availability}` : ''}
+              </div>
+            `);
+          }
+
+          const accessLink = displayValue(property.access_link);
+
+          cardContentArray.push(`
+            <a href="${accessLink || '#'}" target="_blank">View Details</a>
+          `);
+
+          cardContentArray.push(`
+              </div>
+            </div>
+          </div>
+          `);
+
+          // 将数组合并为字符串并设置为 card 的 innerHTML
+          card.innerHTML = cardContentArray.join('');
+          swiperWrapper.appendChild(card);
+        }
+
+         // 更新页码
+        updatePageNumbers(page);
+
+        // 更新分页按钮的状态
+        updatePaginationButtons();
+      }
+      
+      function updatePageNumbers(page) {
+        const pageNumbersContainer = document.getElementById('page-numbers');
+        const totalPages = Math.ceil(totalProperties / itemsPerPage);
+        let pageNumbersHTML = '';
+
+        // 添加上一页按钮
+        if (page > 0) {
+            pageNumbersHTML += `<span class="page-prev">...</span>`;
+        }
+
+        // 动态生成页码按钮
+        for (let i = 0; i < totalPages; i++) {
+            const isCurrentPage = i === page;
+            pageNumbersHTML += `
+                <span class="page-number ${isCurrentPage ? 'current' : ''}" data-page="${i}">
+                    ${i + 1}
+                </span>
+            `;
+        }
+
+        // 添加下一页按钮
+        if (page < totalPages - 1) {
+            pageNumbersHTML += `<span class="page-next">...</span>`;
+        }
+
+        // 设置页码
+        pageNumbersContainer.innerHTML = pageNumbersHTML;
+
+        // 为页码按钮添加点击事件
+        document.querySelectorAll('.page-number').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const page = parseInt(this.dataset.page);
+                currentPage = page;
+                renderPropertiesForPage(page);
+                swiper.update(); // 更新swiper
+            });
+        });
+      }
+
+      // 更新分页按钮状态
+      function updatePaginationButtons() {
+        const prevButton = document.getElementById("prev-button");
+        const nextButton = document.getElementById("next-button");
+
+        // 如果是第一页，禁用上一页按钮
+        if (currentPage === 0) {
+          prevButton.disabled = true;
+        } else {
+          prevButton.disabled = false;
+        }
+
+        // 如果是最后一页，禁用下一页按钮
+        if (currentPage === totalPages - 1) {
+          nextButton.disabled = true;
+        } else {
+          nextButton.disabled = false;
+        }
+      }
+
+      // 初始化 Swiper
+      const swiper = new Swiper('.swiper-container', {
+        slidesPerView: 3,  // 每行显示3个卡片
+        grid: {
+          rows: 2,  // 每页显示2行
+          fill: 'row'
+        },
+        spaceBetween: 12, // 卡片间距
+        loop: false, // 禁用循环
+        navigation: {
+          nextEl: '#next-button',
+          prevEl: '#prev-button',
+        },
+        pagination: {
+          el: '.swiper-pagination',
+          clickable: true,
+        },
+        on: {
+          init: function() {
+            setTimeout(() => {
+              swiper.update(); // 延迟更新 Swiper 布局
+            }, 100);
+          }
+        }
+      });
+
+      // 点击上一页按钮
+      const prevButton = document.getElementById("prev-button");
+      prevButton.addEventListener("click", function () {
+        if (currentPage > 0) {
+          currentPage--;
+          renderPropertiesForPage(currentPage);
+          swiper.update(); // 更新swiper
+        }
+      });
+
+      // 点击下一页按钮
+      const nextButton = document.getElementById("next-button");
+      nextButton.addEventListener("click", function () {
+        if (currentPage < totalPages - 1) {
+          currentPage++;
+          renderPropertiesForPage(currentPage);
+          swiper.update(); // 更新swiper
+        }
+      });
+
+      // 初次渲染第一页数据
+      renderPropertiesForPage(currentPage);
+
+    });
+
+    // 点击返回按钮
+    const backButton = document.getElementById("back-button");
+    backButton.addEventListener("click", function () {
+      history.back();
+    });
+
+  </script>
+</body>
+</html>
