@@ -265,6 +265,14 @@
         border-radius: 4px;
     }
 
+    .page-ellipsis {
+      cursor: pointer;
+    }
+
+    .page-ellipsis:hover {
+        background-color: #f0f0f0;
+    }
+
     .page-number.current {
         background-color: #007bff;
         color: white;
@@ -593,42 +601,78 @@
       }
       
       function updatePageNumbers(page) {
-        const pageNumbersContainer = document.getElementById('page-numbers');
-        const totalPages = Math.ceil(totalProperties / itemsPerPage);
-        let pageNumbersHTML = '';
+          const pageNumbersContainer = document.getElementById('page-numbers');
+          const totalPages = Math.ceil(totalProperties / itemsPerPage);
+          let pageNumbersHTML = '';
 
-        // 添加上一页按钮
-        if (page > 0) {
-            pageNumbersHTML += `<span class="page-prev">...</span>`;
-        }
+          const maxVisiblePages = 5;
 
-        // 动态生成页码按钮
-        for (let i = 0; i < totalPages; i++) {
-            const isCurrentPage = i === page;
-            pageNumbersHTML += `
-                <span class="page-number ${isCurrentPage ? 'current' : ''}" data-page="${i}">
-                    ${i + 1}
-                </span>
-            `;
-        }
+          function createPageSpan(pageNumber, isCurrent = false) {
+              return `<span class="page-number ${isCurrent ? 'current' : ''}" data-page="${pageNumber}">
+                          ${pageNumber + 1}
+                      </span>`;
+          }
 
-        // 添加下一页按钮
-        if (page < totalPages - 1) {
-            pageNumbersHTML += `<span class="page-next">...</span>`;
-        }
+          function createEllipsisSpan(targetPage) {
+              return `<span class="page-ellipsis" data-page="${targetPage}">...</span>`;
+          }
 
-        // 设置页码
-        pageNumbersContainer.innerHTML = pageNumbersHTML;
+          if (totalPages <= maxVisiblePages) {
+              // Show all page numbers directly
+              for (let i = 0; i < totalPages; i++) {
+                  pageNumbersHTML += createPageSpan(i, i === page);
+              }
+          } else {
+              // Always show first page
+              pageNumbersHTML += createPageSpan(0, page === 0);
 
-        // 为页码按钮添加点击事件
-        document.querySelectorAll('.page-number').forEach(function (button) {
-            button.addEventListener('click', function () {
-                const page = parseInt(this.dataset.page);
-                currentPage = page;
-                renderPropertiesForPage(page);
-                swiper.update(); // 更新swiper
-            });
-        });
+              if (page > 2) {
+                  // Left ellipsis
+                  const midLeft = Math.floor((page + 0) / 2);
+                  pageNumbersHTML += createEllipsisSpan(midLeft);
+              }
+
+              // Pages around current
+              const start = Math.max(1, page - 1);
+              const end = Math.min(totalPages - 2, page + 1);
+              for (let i = start; i <= end; i++) {
+                  if (i !== 0 && i !== totalPages - 1) {
+                      pageNumbersHTML += createPageSpan(i, i === page);
+                  }
+              }
+
+              if (page < totalPages - 3) {
+                  // Right ellipsis
+                  const midRight = Math.floor((page + totalPages - 1) / 2);
+                  pageNumbersHTML += createEllipsisSpan(midRight);
+              }
+
+              // Always show last page
+              pageNumbersHTML += createPageSpan(totalPages - 1, page === totalPages - 1);
+          }
+
+          // 插入 HTML
+          pageNumbersContainer.innerHTML = pageNumbersHTML;
+
+          // 点击数字页码
+          document.querySelectorAll('.page-number').forEach(function (button) {
+              button.addEventListener('click', function () {
+                  const page = parseInt(this.dataset.page);
+                  currentPage = page;
+                  renderPropertiesForPage(page);
+                  swiper.update();
+              });
+          });
+
+          // 点击省略号跳页
+          document.querySelectorAll('.page-ellipsis').forEach(function (ellipsis) {
+              ellipsis.addEventListener('click', function () {
+                  const targetPage = parseInt(this.dataset.page);
+                  currentPage = targetPage;
+                  renderPropertiesForPage(targetPage);
+                  swiper.update();
+              });
+          });
       }
 
       // 更新分页按钮状态
