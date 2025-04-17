@@ -218,6 +218,18 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
+    .card .property-index-badge {
+      position: absolute;
+      top: 9px;
+      left: 252px;
+      background-color: rgba(0,0,0,0.7);
+      color: white;
+      font-size: 20px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      z-index: 10;
+    }
+
     .card .image {
       width: 50%;
       height: 100px;
@@ -229,13 +241,13 @@
     }
 
     .card .title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
     .card .body-text-for-whatever {
-      font-size: 14px;
+      font-size: 13px;
       color: #555;
     }
 
@@ -557,6 +569,7 @@
           // 使用数组来拼接 HTML 字符串
           const cardContentArray = [
             `<div class="card">
+              <div class="property-index-badge">No.${i + 1}</div>
               <img class="image" src="${property.image}" loading="lazy">
               <div class="body">
                 <div class="text">
@@ -568,11 +581,19 @@
           const space = displayValue(property.space);
           const availability = displayValue(property.availability);
 
-          if (price || space || availability) {
+          if (price) {
             cardContentArray.push(`
-              <div class="body-text-for-whatever">
-                ${price ? price : ''} ${space ? `| ${space}` : ''} ${availability ? `| ${availability}` : ''}
-              </div>
+              <div class="body-text-for-whatever">${price}</div>
+            `);
+          }
+          if (space) {
+            cardContentArray.push(`
+              <div class="body-text-for-whatever">${space}</div>
+            `);
+          }
+          if (availability) {
+            cardContentArray.push(`
+              <div class="body-text-for-whatever">${availability}</div>
             `);
           }
 
