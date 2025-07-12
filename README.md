@@ -1,0 +1,4 @@
+BizRent Insight is a web-based application designed to assist aspiring food and beverage (F&B) business owners in identifying optimal rental locations for their new ventures. Leveraging data
+from Yelp, LoopNet, and OpenStreetMap (OSM), the system integrates various data sources to provide a comprehensive analysis of commercial property suitability. The application employs
+Random Forest model to evaluate a combination of features such as property price index, POI distribution, restaurant density, and competition level, in order to predict a location’s success potential. The backend is developed using Django, while the frontend is implemented with HTML, JavaScript, and CSS. BizRent Insight not only automates
+tedious manual research but also offers users a data-driven decision-making tool, potentially improving startup success rates in the F&B sector.
